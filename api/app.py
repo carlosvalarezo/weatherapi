@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 import ssl
 
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -10,6 +10,12 @@ app = Flask(__name__)
 @app.route('/api/health')
 def health():
     return jsonify({'status': 'up'})
+
+
+@app.route('/api/weather', methods=['GET'])
+def weather():
+    city = request.args.get('')
+    return jsonify({'city': city})
 
 
 if __name__ == '__main__':
