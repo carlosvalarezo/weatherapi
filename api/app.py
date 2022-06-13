@@ -14,8 +14,9 @@ def health():
 
 @app.route('/api/weather', methods=['GET'])
 def weather():
-    city = request.args.get('')
-    return jsonify({'city': city})
+    city = request.args.get('city', '', type=str)
+    country = request.args.get('country', '', type=str)
+    return jsonify({'city': city}, {'country': country})
 
 
 if __name__ == '__main__':

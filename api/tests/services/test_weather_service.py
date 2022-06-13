@@ -18,5 +18,5 @@ def mock_response(monkeypatch):
 
 
 def test_get_weather_data():
-    result = WeatherService.get_weather_data("https://myfavurl")
+    result = WeatherService.get_weather_data()
     assert result['mock_key'] == 'mock_response'

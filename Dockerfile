@@ -13,6 +13,8 @@ ADD requirements.txt /api
 
 USER pythonuser
 
+ENV WEATHER_ENDPOINT=$WEATHER_ENDPOINT
+
 RUN python -m pip install -r requirements.txt
 
 ENTRYPOINT ["python", "app.py", "-h", "0.0.0.0"]
