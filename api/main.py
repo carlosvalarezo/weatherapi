@@ -3,21 +3,20 @@ import os
 import ssl
 
 from flask import Flask, request, jsonify
-
+from routes.health import health_endpoint
+from routes.weather import weather_endpoint
 
 app = Flask(__name__)
-
-
-@app.route('/api/health')
-def health():
-    return jsonify({'status': 'up'})
+app.register_blueprint(health_endpoint, url_prefix='/api')
+app.register_blueprint(weather_endpoint, url_prefix='/weather')
 
 
 @app.route('/api/weather', methods=['GET'])
 def weather():
     city = request.args.get('city', None, type=str)
     country = request.args.get('country', None, type=str)
-    return jsonify({'city': city})
+    # data = WeatherService.get_weather_data(city=city, country=country)
+    return jsonify({'country': country})
 
 
 if __name__ == '__main__':

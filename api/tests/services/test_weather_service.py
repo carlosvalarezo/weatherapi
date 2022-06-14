@@ -2,8 +2,7 @@ import pytest
 
 from faker import Faker
 
-from api.adapters.api import WeatherAPIAdapter
-from api.services.weather import WeatherService
+from api.routes.weather import WeatherAPIAdapter, WeatherService
 
 fake = Faker('es_CO')
 

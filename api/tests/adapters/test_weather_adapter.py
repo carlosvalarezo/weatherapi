@@ -2,9 +2,9 @@ import pytest
 import requests
 from faker import Faker
 
-from api.adapters.api import WeatherAPIAdapter
-from api.errors.api_key_not_set import ApiKeyNotSetError
-from api.errors.endpoint_not_set import EndpointNotSetError
+
+from api.routes.weather import WeatherAPIAdapter, ApiKeyNotSetError, EndpointNotSetError
+
 
 fake = Faker()
 
