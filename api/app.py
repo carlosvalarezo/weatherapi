@@ -4,6 +4,7 @@ import ssl
 
 from flask import Flask, request, jsonify
 
+
 app = Flask(__name__)
 
 
@@ -14,9 +15,9 @@ def health():
 
 @app.route('/api/weather', methods=['GET'])
 def weather():
-    city = request.args.get('city', '', type=str)
-    country = request.args.get('country', '', type=str)
-    return jsonify({'city': city}, {'country': country})
+    city = request.args.get('city', None, type=str)
+    country = request.args.get('country', None, type=str)
+    return jsonify({'city': city})
 
 
 if __name__ == '__main__':
