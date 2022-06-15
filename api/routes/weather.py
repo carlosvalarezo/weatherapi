@@ -1,6 +1,11 @@
-from flask import Blueprint, jsonify, request
-from http import HTTPStatus
+import json
 
+from flask import abort, Blueprint, jsonify, request
+from http import HTTPStatus
+from pymapper import Mapper
+from datetime import datetime
+
+import logging
 import os
 import requests
 
@@ -58,36 +63,126 @@ class WeatherAPIAdapter:
 class WeatherService:
     @staticmethod
     def get_weather_data(city, country):
-        weather_adapter = WeatherAPIAdapter()
-        return weather_adapter.get_weather_data(city=city, country=country)
-
-
-class ArgumentValidation:
-    @staticmethod
-    def check_valid_arguments(params):
-        city = params.args.get('city', '', type=str)
         if city is None:
             raise CityNotFoundException({
                 'code': 'missing_city',
                 'description': 'The city was not included in the request'
             }, 404)
-        country = params.args.get('country', '', type=str)
         if country is None:
             raise CountryNotFoundException({
                 'code': 'missing_country',
                 'description': 'The country was not included in the request'
             }, 404)
-        return True
+        weather_adapter = WeatherAPIAdapter()
+        return weather_adapter.get_weather_data(city=city, country=country)
+
+
+class WeatherMap:
+    KELVIN_FACTOR = 273.15
+
+    def __init__(self, data) -> None:
+        self.location_name = self._set_location(self, data)
+        self.temperature = self._set_temperature(self, data)
+        self.wind = self._set_wind(self, data)
+        self.cloudiness = self._set_cloudiness(self, data)
+        self.pressure = self._set_pressure(self, data)
+        self.humidity = self._set_humidity(self, data)
+        self.sunrise = self._set_sunrise(self, data)
+        self.sunset = self._set_sunset(self, data)
+        self.geo_coordinates = self._set_geo_coordinates(self, data)
+
+    @staticmethod
+    def _set_location(self, data: dict) -> str:
+        country = data["sys"]["country"]
+        city = data['name']
+        return f'{city}, {str.upper(country)}'
+
+    @staticmethod
+    def _set_temperature(self, data: dict) -> str:
+        return f'{int(data["main"]["temp"]) - self.KELVIN_FACTOR} C'
+
+    @staticmethod
+    def _set_wind(self, data: dict) -> str:
+        return data["wind"]["speed"]
+
+    @staticmethod
+    def _set_cloudiness(self, data: dict) -> str:
+        return data["weather"][0]["description"]
+
+    @staticmethod
+    def _set_pressure(self, data: dict) -> str:
+        return data["main"]["pressure"]
+
+    @staticmethod
+    def _set_humidity(self, data: dict) -> str:
+        return data["main"]["humidity"]
+
+    @staticmethod
+    def _set_sunrise(self, data: dict) -> str:
+        value = data["sys"]["sunrise"]
+        d = datetime.fromtimestamp(value)
+        return f'{d.hour}:{d.minute}'
+
+    @staticmethod
+    def _set_sunset(self, data: dict) -> str:
+        value = data["sys"]["sunset"]
+        d = datetime.fromtimestamp(value)
+        return f'{d.hour}:{d.minute}'
+
+    @staticmethod
+    def _set_geo_coordinates(self, data: dict) -> str:
+        return f'{data["coord"]["lat"]}, {data["coord"]["lon"]}'
 
 
 weather_endpoint = Blueprint('weather', __name__)
 
 
+def _get_city(req):
+    return req.args.get('city', None, type=str)
+
+
+def _get_country(req):
+    return req.args.get('country', None, type=str)
+
+
+def _map_to_response(data):
+    data_json = json.loads(data)
+    weather_map = WeatherMap(data_json)
+    mapper = Mapper({
+        'location_name': '$source_1',
+        'temperature': '$source_2',
+        'wind': '$source_3',
+        'cloudiness': '$source_4',
+        'pressure': '$source_5',
+        'humidity': '$source_6',
+        'sunrise': '$source_7',
+        'sunset': '$source_8',
+        'geo_coordinates': '$source_9',
+        'requested_time': '$source_10',
+    })
+
+    return mapper.map({
+        'source_1': weather_map.location_name,
+        'source_2': weather_map.temperature,
+        'source_3': weather_map.wind,
+        'source_4': weather_map.cloudiness,
+        'source_5': weather_map.pressure,
+        'source_6': weather_map.humidity,
+        'source_7': weather_map.sunrise,
+        'source_8': weather_map.sunset,
+        'source_9': weather_map.geo_coordinates,
+        'source_10': datetime.now(),
+    })
+
+
 @weather_endpoint.route('data', methods=['GET'])
 def weather():
-    # ArgumentValidation.check_valid_arguments(request)
-    city = request.args.get('city', None, type=str)
-    country = request.args.get('country', None, type=str)
-    weather_service = WeatherService()
-    data = weather_service.get_weather_data(city=city, country=country)
-    return jsonify(data)
+    try:
+        city = _get_city(req=request)
+        country = _get_country(req=request)
+        weather_service = WeatherService()
+        raw_data = weather_service.get_weather_data(city=city, country=country)
+        return jsonify(_map_to_response(json.dumps(raw_data)))
+    except (CountryNotFoundException, CityNotFoundException) as e:
+        logging.error(e)
+        abort(e)

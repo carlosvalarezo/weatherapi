@@ -4,6 +4,7 @@ from faker import Faker
 
 
 from api.routes.weather import WeatherAPIAdapter, ApiKeyNotSetError, EndpointNotSetError
+from api.routes.weather import CityNotFoundException, CountryNotFoundException, WeatherService
 
 
 fake = Faker()
@@ -48,12 +49,36 @@ def mock_weather_api_key_missing(monkeypatch):
     monkeypatch.delenv("WEATHER_APP_ID", raising=False)
 
 
+def mock_valid_city():
+    return fake.city()
+
+
+def mock_valid_country():
+    return fake.country_code()
+
+
 def test_request_weather_data(mock_get_request, mock_weather_endpoint, mock_weather_api_key):
     weather_adapter = WeatherAPIAdapter()
-    city = fake.city()
-    country = fake.country_code()
+    city = mock_valid_city()
+    country = mock_valid_country()
     result = weather_adapter.get_weather_data(city, country)
     assert result["mock_key"] == "mock_response"
+
+
+def test_should_rise_CityNotFoundException_on_missing_city(mock_get_request, mock_weather_endpoint, mock_weather_api_key):
+    with pytest.raises(CityNotFoundException):
+        weather_service = WeatherService()
+        city = None
+        country = mock_valid_country()
+        _ = weather_service.get_weather_data(city, country)
+
+
+def test_should_rise_CountryNotFoundException_on_missing_city(mock_get_request, mock_weather_endpoint, mock_weather_api_key):
+    with pytest.raises(CountryNotFoundException):
+        weather_service = WeatherService()
+        city = mock_valid_city()
+        country = None
+        _ = weather_service.get_weather_data(city, country)
 
 
 def test_should_raise_EndpointNotSetError_on_endpoint_missing(mock_not_get_request,
