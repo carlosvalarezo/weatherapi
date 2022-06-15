@@ -16,4 +16,4 @@ USER pythonuser
 
 RUN python -m pip install -r requirements.dev.txt
 
-CMD python -m pytest /api/tests
+CMD python -m pytest --cov && python -m pytest /api/tests

@@ -1,5 +1,6 @@
 .idea/
 .DS_Store/
 .pytest_cache/
+.coverage
 __pycache__/
 certs/
